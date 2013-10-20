@@ -30,19 +30,27 @@ def SubmitNewLink(post):
 	title = post["artist"] + " - " + post["album"] 
 	
 	#submit new link for album
-	submission = bot.submit('newonspotify', title, url=post["album_link"], raise_captcha_exception=True)
-	print "Submitted link for " + title 
+	try:
+		submission = bot.submit('newonspotify', title, url=post["album_link"], raise_captcha_exception=True)
+		print "Submitted link for " + title 
+	except:
+		print "Album already submitted on sub-reddit."
+		return
 
-	#creating links for comment
-	album = "[" + post["album"] + "](" + post["album_link"] + ")"
-	artist = "[" + post["artist"] + "](" + post["artist_link"] + ")"
-	
-	#submit comment with additional information
-	comment =  'Additional Information\n\n* Album Name - ' + album + '\n\n* Album Popularity - ' + post["popularity"] + '\n\n* Artist Name - ' + artist + '\n\n* Available Territories - ' + post["availableterritories"]
-	
-	#add additional information as a comment to submission
-	submission.add_comment(comment)
-	print "submitted comment for " + title
+	try: 
+		#creating links for comment
+		album = "[" + post["album"] + "](" + post["album_link"] + ")"
+		artist = "[" + post["artist"] + "](" + post["artist_link"] + ")"
+		
+		#submit comment with additional information
+		comment =  'Additional Information\n\n* Album Name - ' + album + '\n\n* Album Popularity - ' + post["popularity"] + '\n\n* Artist Name - ' + artist + '\n\n* Available Territories - ' + post["availableterritories"]
+		
+		#add additional information as a comment to submission
+		submission.add_comment(comment)
+		print "submitted comment for " + title
+	except:
+		print "Comment could not be submitted."
+		return
 
 def UpdateAlbumStatus(album, artist):
 	search_request = SearchForAlbum(album, artist)
@@ -105,9 +113,9 @@ def PostToReddit():
 	posts_to_submit = collection.find({"status": "to be submitted"})
 
 	for post in posts_to_submit:
-	 	SubmitNewLink(post)
-	 	UpdateAlbumStatus(post["album"], post["artist"])
-	 	counter = counter + 1
+ 		SubmitNewLink(post)
+ 		UpdateAlbumStatus(post["album"], post["artist"])
+ 		counter = counter + 1
 	 	time.sleep(10) #make sure not to exceed API limits
 
 	print str(counter) + " submissions of new albums to /r/newonspotify."
