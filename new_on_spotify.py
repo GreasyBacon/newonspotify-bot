@@ -9,7 +9,7 @@ def ConnectToMongo():
 	client = pymongo.MongoClient()
 	db = client.newonspotify
 	global collection
-	collection = db.newalbumstest
+	collection = db.albums
 
 #calling spotify API
 def GetAPIData():
@@ -30,7 +30,7 @@ def SubmitNewLink(post):
 	title = post["artist"] + " - " + post["album"] 
 	
 	#submit new link for album
-	submission = bot.submit('newonspotify', title, url=post["album_link"])
+	submission = bot.submit('newonspotify', title, url=post["album_link"], raise_captcha_exception=True)
 	print "Submitted link for " + title 
 
 	#creating links for comment
@@ -100,16 +100,15 @@ def PostToReddit():
 	bot = praw.Reddit(	'Link Submitter for /r/newonspotify using PRAW'
 						'Created by: /u/GreasyBacon'
 						'Contact: dilutedthoughts@outlook.com' )	
-	bot.login('username', 'password')
+	bot.login("username", "password")
 
 	posts_to_submit = collection.find({"status": "to be submitted"})
 
 	for post in posts_to_submit:
-	 	if counter == 0:
-	 		SubmitNewLink(post)
-	 		UpdateAlbumStatus(post["album"], post["artist"])
-	 		counter = counter + 1
-	# 	time.sleep(10) #make sure not to exceed API limits
+	 	SubmitNewLink(post)
+	 	UpdateAlbumStatus(post["album"], post["artist"])
+	 	counter = counter + 1
+	 	time.sleep(10) #make sure not to exceed API limits
 
 	print str(counter) + " submissions of new albums to /r/newonspotify."
 
