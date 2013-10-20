@@ -33,21 +33,15 @@ def SubmitNewLink(post):
 	submission = bot.submit('newonspotify', title, url=post["album_link"])
 	print "Submitted link for " + title 
 
-	#submit comment with additional information
-	comment =  '''Additional Information
-				* Album Name - album_name
-				* Album Popularity - album_popularity
-				* Artist Name - artist_name
-				* Available Territories - territories
-				'''
-	#replacing template - [title](link)
+	#creating links for comment
 	album = "[" + post["album"] + "](" + post["album_link"] + ")"
-	comment.replace('album_name', album)
-	comment.replace('album_popularity', post["popularity"])
 	artist = "[" + post["artist"] + "](" + post["artist_link"] + ")"
-	comment.replace('artist_name', artist)
-	comment.replace('territories', post["availableterritories"])
-	submission.add_comment("comment")
+	
+	#submit comment with additional information
+	comment =  'Additional Information\n\n* Album Name - ' + album + '\n\n* Album Popularity - ' + post["popularity"] + '\n\n* Artist Name - ' + artist + '\n\n* Available Territories - ' + post["availableterritories"]
+	
+	#add additional information as a comment to submission
+	submission.add_comment(comment)
 	print "submitted comment for " + title
 
 def UpdateAlbumStatus(album, artist):
@@ -106,28 +100,24 @@ def PostToReddit():
 	bot = praw.Reddit(	'Link Submitter for /r/newonspotify using PRAW'
 						'Created by: /u/GreasyBacon'
 						'Contact: dilutedthoughts@outlook.com' )	
-	bot.login('newonspotify_bot', 'ilovespotify')
+	bot.login('username', 'password')
 
 	posts_to_submit = collection.find({"status": "to be submitted"})
 
 	for post in posts_to_submit:
-	 	SubmitNewLink(post)
-	 	UpdateAlbumStatus(post["album"], post["artist"])
-	 	counter = counter + 1
+	 	if counter == 0:
+	 		SubmitNewLink(post)
+	 		UpdateAlbumStatus(post["album"], post["artist"])
+	 		counter = counter + 1
 	# 	time.sleep(10) #make sure not to exceed API limits
 
 	print str(counter) + " submissions of new albums to /r/newonspotify."
 
-# if __name__ == "__main__":
-# 	try:
-# 		ConnectToMongo()
-# 		albums = GetAPIData()
-# 		InsertIntoDatabase(albums)
-# 		PostToReddit()
-# 	except: 
-# 		print "something went wrong, fix your dam bot"
-
-ConnectToMongo()
-albums = GetAPIData()
-InsertIntoDatabase(albums)
-PostToReddit()
+if __name__ == "__main__":
+	try:
+		ConnectToMongo()
+		albums = GetAPIData()
+		InsertIntoDatabase(albums)
+		PostToReddit()
+	except: 
+		print "Something has gone wrong. Probably a good idea to investigate."
