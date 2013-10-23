@@ -5,28 +5,32 @@ import simplejson
 import praw
 
 #setting up mongodb connection
-def ConnectToMongo():
+def connect_to_mongo():
 	client = pymongo.MongoClient()
 	db = client.newonspotify
 	global collection
 	collection = db.albums
 
 #calling spotify API
-def GetAPIData():
-	url = "http://ws.spotify.com/search/1/album.json?q=tag:new"
+def get_api_data(page):
+	if page == 1:
+		url = "http://ws.spotify.com/search/1/album.json?q=tag:new"
+	else:
+		url = "http://ws.spotify.com/search/1/album.json?q=tag:new&page=" + str(page)
 	request = urllib2.urlopen(url)
 	json_response = simplejson.loads(request.read())
 	album_data = json_response["albums"]
+	print "Getting data for page " + str(page)
 	return album_data
 
 #search for an album in the database
-def SearchForAlbum(album, artist):
+def search_for_album(album, artist):
 	search = collection.find_one({	"artist":artist,
 									"album": album
 								})
 	return search
 
-def SubmitNewLink(post):
+def submit_new_link(post):
 	title = post["artist"] + " - " + post["album"] 
 	
 	#submit new link for album
@@ -52,8 +56,8 @@ def SubmitNewLink(post):
 		print "Comment could not be submitted."
 		return
 
-def UpdateAlbumStatus(album, artist):
-	search_request = SearchForAlbum(album, artist)
+def update_album_status(album, artist):
+	search_request = search_for_album(album, artist)
 	if search_request is None: 
 		print "I'm not submitting this album, there's no record in the db."
 	else:
@@ -64,7 +68,7 @@ def UpdateAlbumStatus(album, artist):
 		else:
 			print "Database record updated for " + album
 
-def ConvertSpotifyLink(href):
+def convert_spotify_link(href):
 	artist_check = "artist"
 	if artist_check in href:
 		new_href = href.replace("spotify:artist:", "http://open.spotify.com/artist/")
@@ -73,16 +77,16 @@ def ConvertSpotifyLink(href):
 	return new_href
 
 #insert new albums into database
-def InsertIntoDatabase(album_data):
+def insert_into_database(album_data):
 	counter = 0
 	
 	for albums in album_data:
-		search_attempt = SearchForAlbum(albums["name"], albums["artists"][0]["name"])
+		search_attempt = search_for_album(albums["name"], albums["artists"][0]["name"])
 
 		if search_attempt is None:
 			try:
-				album_link = ConvertSpotifyLink(albums["href"])
-				artist_link = ConvertSpotifyLink(albums["artists"][0]["href"])
+				album_link = convert_spotify_link(albums["href"])
+				artist_link = convert_spotify_link(albums["artists"][0]["href"])
 				mongo_album = { "album" : albums["name"],
 								"album_link" : album_link,
 								"popularity" : albums["popularity"],
@@ -101,8 +105,10 @@ def InsertIntoDatabase(album_data):
 
 	print str(counter) + " albums added to Database."
 
-def PostToReddit():
+def post_to_reddit():
 	#posting to /r/newonspotify
+	#newonspotify_bot
+	#ilovespotify
 	counter = 0
 	global bot
 	bot = praw.Reddit(	'Link Submitter for /r/newonspotify using PRAW'
@@ -113,18 +119,20 @@ def PostToReddit():
 	posts_to_submit = collection.find({"status": "to be submitted"})
 
 	for post in posts_to_submit:
- 		SubmitNewLink(post)
- 		UpdateAlbumStatus(post["album"], post["artist"])
+ 		submit_new_link(post)
+ 		update_album_status(post["album"], post["artist"])
  		counter = counter + 1
 	 	time.sleep(10) #make sure not to exceed API limits
 
 	print str(counter) + " submissions of new albums to /r/newonspotify."
 
 if __name__ == "__main__":
+	pages = [5,4,3,2,1]
 	try:
-		ConnectToMongo()
-		albums = GetAPIData()
-		InsertIntoDatabase(albums)
-		PostToReddit()
+		connect_to_mongo()
+		for page in pages:
+			albums = get_api_data(page)
+			insert_into_database(albums)
+			post_to_reddit()
 	except: 
 		print "Something has gone wrong. Probably a good idea to investigate."
