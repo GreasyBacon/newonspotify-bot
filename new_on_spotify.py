@@ -3,6 +3,7 @@ import pymongo
 import urllib2
 import simplejson
 import praw
+import pytumblr
 
 #setting up mongodb connection
 def connect_to_mongo():
@@ -30,12 +31,25 @@ def search_for_album(album, artist):
 								})
 	return search
 
-def submit_new_link(post):
+def submit_new_tumblr_link(post):
+	embed_html = "<b>Album Information</b><br><ul><li><i>Album</i> - <a href=" + post["album_link"] + ">" + post["album"] + "</a><li><i>Album Popularity</i> - " + post["popularity"] + "<li><i>Artist</i> - <a href=" + post["artist_link"] + ">" + post["artist"] + "</a><li><i>Available Territories</i> - " + post["availableterritories"] + "</ul>"
+	
+	#submit new link for album
+	try:
+		submission = tumblr_bot.create_audio('newonspotify', caption=embed_html, external_url=post["album_link"], tags=[post["artist"], post["album"], "spotify", "music", "newonspotify"])
+	except:
+		print "Submission for tumblr went wrong."
+		return
+	else:
+		print post["album"] + " submitted to newonspotify.tumblr.com."
+
+
+def submit_new_reddit_link(post):
 	title = post["artist"] + " - " + post["album"] 
 	
 	#submit new link for album
 	try:
-		submission = bot.submit('newonspotify', title, url=post["album_link"], raise_captcha_exception=True)
+		submission = reddit_bot.submit('newonspotify', title, url=post["album_link"], raise_captcha_exception=True)
 		print "Submitted link for " + title 
 	except:
 		print "Album already submitted on sub-reddit."
@@ -56,17 +70,17 @@ def submit_new_link(post):
 		print "Comment could not be submitted."
 		return
 
-def update_album_status(album, artist):
+def update_album_status(platform, album, artist):
 	search_request = search_for_album(album, artist)
 	if search_request is None: 
 		print "I'm not submitting this album, there's no record in the db."
 	else:
 		try:
-			collection.update({'_id':search_request["_id"]}, {'$set':{"status":"submitted"}})
+			collection.update({'_id':search_request["_id"]}, {'$set':{platform:"submitted"}})
 		except:
 			print "Database record NOT updated for " + album + ". Something went wrong?"
 		else:
-			print "Database record updated for " + album
+			print "Database record updated for " + album + " on platform " + platform
 
 def convert_spotify_link(href):
 	artist_check = "artist"
@@ -93,7 +107,9 @@ def insert_into_database(album_data):
 								"artist" : albums["artists"][0]["name"],
 								"artist_link": artist_link,
 								"availableterritories" : albums["availability"]["territories"], 
-								"status" : "to be submitted" 
+								"tumblr" : "to be submitted",
+								"reddit" : "to be submitted",
+								"twitter" : "to be submmitted"
 							}
 				collection.insert(mongo_album)
 				print albums["name"] + " by " + albums["artists"][0]["name"] + " added to database."
@@ -107,24 +123,54 @@ def insert_into_database(album_data):
 
 def post_to_reddit():
 	#posting to /r/newonspotify
-	#newonspotify_bot
+	#newonspotify_reddit_bot
 	#ilovespotify
 	counter = 0
-	global bot
-	bot = praw.Reddit(	'Link Submitter for /r/newonspotify using PRAW'
-						'Created by: /u/GreasyBacon'
-						'Contact: dilutedthoughts@outlook.com' )	
-	bot.login("username", "password")
+	global reddit_bot
+	reddit_bot = praw.Reddit('Link Submitter for /r/newonspotify using PRAW'
+							'Created by: /u/GreasyBacon'
+							'Contact: dilutedthoughts@outlook.com' )	
+	reddit_bot.login("username", "password")
 
-	posts_to_submit = collection.find({"status": "to be submitted"})
+	posts_to_submit = collection.find({"reddit" : "to be submitted"})
 
 	for post in posts_to_submit:
- 		submit_new_link(post)
- 		update_album_status(post["album"], post["artist"])
+ 		submit_new_reddit_link(post)
+ 		update_album_status("reddit", post["album"], post["artist"])
  		counter = counter + 1
 	 	time.sleep(10) #make sure not to exceed API limits
 
 	print str(counter) + " submissions of new albums to /r/newonspotify."
+
+def post_to_tumblr():
+	#posting to newonspotify.tumblr.com
+	counter = 0
+	global tumblr_bot
+	tumblr_bot = pytumblr.TumblrRestClient(
+	'<consumer_key>',
+	'<consumer_secret>',
+	'<oauth_token>',
+	'<oauth_secret>'
+	)
+
+	try:
+		tumblr_bot.info()
+	except:
+		print "Issue with tumblr log-in credentials."
+	else:
+		posts_to_submit = collection.find({"tumblr" : "to be submitted"})
+
+		for post in posts_to_submit:
+			submit_new_tumblr_link(post)
+			update_album_status("tumblr", post["album"], post["artist"])
+			counter = counter + 1
+			time.sleep(10)
+
+		print str(counter) + " submissions of new albums to newonspotify.tumblr.com"
+
+def songkick_integration():
+	#adding nearest songkick concerts
+	print "working"
 
 if __name__ == "__main__":
 	pages = [5,4,3,2,1]
@@ -134,5 +180,6 @@ if __name__ == "__main__":
 			albums = get_api_data(page)
 			insert_into_database(albums)
 			post_to_reddit()
+			post_to_tumblr()
 	except: 
 		print "Something has gone wrong. Probably a good idea to investigate."
