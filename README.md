@@ -3,8 +3,7 @@ Bot for /r/newonspotify
 
 Introduction
 --------------
-Initially, I decided to sign up to GitHub to host the code for my first bot written in Python for my subreddit - /r/newonspotify. After thinking about it though, I realised it could also be utilised to post to other social networks such as tumblr and twitter. So for the moment, I have accounts created for Tumblr and Twitter, however only Tumblr support has been integrated (with Twitter on the way!).
-
+Initially, I decided to sign up to GitHub to host the code for my first bot written in Python for my subreddit - /r/newonspotify. After thinking about it though, I realised it could also be utilised to post to other social networks such as Tumblr and Twitter. So for the moment, I have accounts created, set-up and working for Tumblr and Twitter, with my next step to be integrating Songkick into the posts for "On Tour" artists.
 
 Purpose
 --------------
@@ -25,16 +24,16 @@ In order to make this script work as it does, it relies on the following utiliti
 - simplejson
 - praw
 - pytumblr
+- twython
 
 Updates
 --------------
-23 Oct 2013 - Fixes, script now goes through the first 5 pages of the API results (that should be enough... right?)
-25 Oct 2013 - Fixes, script now submits to its very own Tumblr blog - newonpsotify.tumblr.com!
+- 23 Oct 2013 - Fixes, script now goes through the first 5 pages of the API results (that should be enough... right?)
+- 25 Oct 2013 - Fixes, script now submits to its very own Tumblr blog - newonpsotify.tumblr.com!
+- 27 Oct 2013 - Fixes (all day every day), script now submits to its very own Twitter account - @_newonspotify!
 
 Plans for the future
 --------------
-- Better title submissions
 - Songkick integration (API key acquired!)
-- Twitter integration
 - A pot of gold at the end of the rainbow
 - Whatever suggestions come my way
