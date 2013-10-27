@@ -26,6 +26,13 @@ In order to make this script work as it does, it relies on the following utiliti
 - pytumblr
 - twython
 
+Limitations
+--------------
+- At the moment, Twitter is limiting the account status' to 160 per day. This isn't great considering there's a backlog of links to submit to Twitter in my database, and Spotify could tag more than 160 albums as new per day. A potential workaround would be to only submit links to Twitter of artists who have say more than 5,000 followers but currently in the lookup API there's no way to get the number of follwers an artist has. 
+- Whenever the script runs, it's just submitting link after link 10 seconds apart. So if you're following the Tumblr or Twitter account, it's just going to keep spamming your feed until the script is done. I may be able to set up a queue system with Tumblr and I'm not worried that much about Reddit, but again Twitter may be an issue. 
+- It's just running on my laptop at the moment, with a local database. Ideally, I'd like to move the automated script and database onto a linux server somewhere and keep it running every 6 hours. 
+- There probably is more... I just have to think of them.
+
 Updates
 --------------
 - 23 Oct 2013 - Fixes, script now goes through the first 5 pages of the API results (that should be enough... right?)
